@@ -48,7 +48,7 @@ st.title("Distribution Trend Calculator")
 
 # --- Data path ---
 st.subheader("Data Source")
-data_path = st.text_input("Local file path (CSV or XLSX)", value=config.DATA_PATH, placeholder=r"C:\path\to\extract.xlsx")
+data_path = st.text_input("Local file path (CSV or XLSX)", value=config.DATA_PATH, placeholder="ProgramDistribution-idlrOG.csv")
 
 try:
     df_raw = load_dataset(data_path)
