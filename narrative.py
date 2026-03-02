@@ -66,6 +66,7 @@ def build_narrative(epd: pd.DataFrame, granularity: str, include_prior: bool) ->
         total_ratio = _safe_ratio_trend(first_val, last_val)
 
         per_word = _per_period_word(granularity)
+        period = per_word.split()[-1] if len(per_word.split()) > 1 else "period"
 
         if pd.isna(total_ratio) or n_steps == 0:
             trend_phrase = "Overall trend is not directly comparable (insufficient periods or starts at 0)."
@@ -133,13 +134,13 @@ def build_narrative(epd: pd.DataFrame, granularity: str, include_prior: bool) ->
             prior_txt = f" Prior FY total (aligned): {_fmt_int(prior_total)} lbs."
 
         # Compose a compact executive summary
-        lines.append(f"{entity_id} for the period {earliest_period} to {recent_period}:")
-        lines.append(f"- Total pounds distributed: {_fmt_int(total_lbs)} lbs. The average per period was {_fmt_int(avg_lbs)} lbs.{prior_txt}")
+        lines.append(f"{entity_id} for the period {first_day} to {last_day}:")
+        lines.append(f"- Total pounds distributed: {_fmt_int(total_lbs)} lbs. The average {per_word} was {_fmt_int(avg_lbs)} lbs.{prior_txt}")
         lines.append(f"- {trend_phrase}")
         lines.append(f"- {inc_txt}")
         lines.append(f"- {dec_txt}")
-        lines.append(f"- Number of periods with >20% increase/decrease vs prior period: {flagged_n}.")
-        lines.append(f"- Most recent period ({recent_period}) pounds distributed: {_fmt_int(recent_lbs)} lbs.")
+        lines.append(f"- Number of {period}(s) with >20% increase/decrease vs prior {period}: {flagged_n}.")
+        lines.append(f"- Most recent {period} ({recent_period}) pounds distributed: {_fmt_int(recent_lbs)} lbs.")
         lines.append("")  # spacer between entities
 
     return "\n".join(lines).strip()
