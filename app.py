@@ -311,8 +311,8 @@ rename_map = {
     "period_label": "Period",
     "lbs": "Total Pounds",
 
-    "hh_median": "Median Households",
-    "hh_max": "Max Households",
+    "hh_median": "Median Household Size",
+    "hh_max": "Max Household Size",
     "hh_median_range": "Median Households (Range)",
     "hh_max_range": "Max Households (Range)",
 
@@ -343,6 +343,8 @@ bucket_cols = [
     "hh_max_bucket",
     "hh_median_range_bucket",
     "hh_max_range_bucket",
+    "Median Households (Range)",
+    "Max Households (Range)",
 ]
 
 y1_disp = y1_disp.drop(columns=[c for c in bucket_cols if c in y1_disp.columns])
