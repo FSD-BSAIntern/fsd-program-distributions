@@ -118,11 +118,13 @@ def build_narrative(epd: pd.DataFrame, granularity: str, include_prior: bool) ->
         # Earliest period
         earliest_period = g["period_label"].iloc[0]
         earliest_lbs = g["lbs"].iloc[0]
+        first_day = earliest_period.split(" to ")[0] if " to " in earliest_period else earliest_period
         
         # Most recent period
         recent_period = g["period_label"].iloc[-1]
         recent_lbs = g["lbs"].iloc[-1]
-
+        last_day  = recent_period.split(" to ")[1] if " to " in recent_period else recent_period
+        
         # Optional prior FY quick context (kept minimal)
         prior_txt = ""
         if include_prior and "lbs_prior" in g.columns:
