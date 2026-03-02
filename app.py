@@ -213,10 +213,10 @@ try:
         df,
         granularity=granularity,
         mode=mode,
-        start_date=pd.Timestamp(start_d) if window_mode == "Date range" else None,
-        end_date=pd.Timestamp(end_d) if window_mode == "Date range" else None,
-        anchor_date=pd.Timestamp(anchor_d) if window_mode == "Anchor + lookback" else None,
-        lookback_periods=int(lookback) if window_mode == "Anchor + lookback" else None,
+        start_date=pd.Timestamp(start_d) if window_mode == "Date Range" else None,
+        end_date=pd.Timestamp(end_d) if window_mode == "Date Range" else None,
+        anchor_date=pd.Timestamp(anchor_d) if window_mode == "Anchor + Period Lookback" else None,
+        lookback_periods=int(lookback) if window_mode == "Anchor + Period Lookback" else None,
     )
 except Exception as e:
     st.error(str(e))
