@@ -336,7 +336,7 @@ y1_disp = y1_disp.rename(columns=rename_map)
 
 # --- Outputs ---
 st.subheader("Y1. Summary Table")
-st.caption("Flag (****) triggers only on ±20% period-over-period % change (current FY).")
+st.caption("Alert (****) triggers only on a ±20% change vs. the immediate Previous Period (Current FY).")
 
 bucket_cols = [
     "hh_median_bucket",
