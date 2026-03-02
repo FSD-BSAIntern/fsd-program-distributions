@@ -361,7 +361,7 @@ styled_y1 = y1_disp.style.applymap(
 
 st.dataframe(styled_y1, use_container_width=True, hide_index=True)
 
-st.subheader("Y2. Charts")
+st.subheader("Y2. Trend Figures by Entity")
 chart_mode = st.radio("Show charts for", options=["All selected entities", "Choose one"], horizontal=True)
 chosen = None
 if chart_mode == "Choose one":
@@ -376,9 +376,107 @@ for entity_id, g in epd.groupby("entity_id"):
     st.plotly_chart(fig, use_container_width=True)
     chart_html_frags.append(fig.to_html(full_html=False, include_plotlyjs="cdn"))
 
-st.subheader("Y3. Verbal Summary")
-narrative = build_narrative(epd, granularity=granularity, include_prior=include_prior)
-st.text(narrative)
+st.subheader("Y3. Overall Summary")
+def _fmt_int(x):
+    return "" if pd.isna(x) else f"{float(x):,.0f}"
+
+def _fmt_pct_from_ratio(r):
+    # r is ratio like 0.123 => 12.3%
+    if pd.isna(r):
+        return ""
+    if r == float("inf"):
+        return "∞"
+    if r == float("-inf"):
+        return "-∞"
+    return f"{r*100:.1f}%"
+
+def _safe_ratio_trend(first, last):
+    # Returns ratio (e.g., 0.10 = +10%) or np.nan if undefined
+    if pd.isna(first) or pd.isna(last):
+        return np.nan
+    if first == 0:
+        return np.nan
+    return (last - first) / abs(first)
+
+def build_narrative(epd: pd.DataFrame, granularity: str, include_prior: bool) -> str:
+    if epd is None or len(epd) == 0:
+        return "No data available for the selected filters."
+
+    df = epd.copy()
+
+    # Ensure period labels exist
+    if "period_label" not in df.columns:
+        df["period_label"] = df["period_key"].apply(lambda k: period_label(granularity, k))
+
+    lines = []
+    for entity_id, g in df.groupby("entity_id", sort=True):
+        g = g.sort_values("period_key").copy()
+
+        lbs = pd.to_numeric(g["lbs"], errors="coerce")
+        total_lbs = lbs.sum(skipna=True)
+        avg_lbs = lbs.mean(skipna=True)
+
+        # Trend: compare first non-null vs last non-null (interpretable)
+        nonnull = g.loc[lbs.notna()]
+        first_val = nonnull["lbs"].iloc[0] if len(nonnull) else np.nan
+        last_val = nonnull["lbs"].iloc[-1] if len(nonnull) else np.nan
+        trend_ratio = _safe_ratio_trend(first_val, last_val)
+
+        if pd.isna(trend_ratio):
+            trend_phrase = "Overall trend is not directly comparable (starts at 0 or missing early periods)."
+        else:
+            direction = "increased" if trend_ratio > 0 else "decreased" if trend_ratio < 0 else "remained roughly flat"
+            trend_phrase = f"Over time, distribution generally {direction} by {_fmt_pct_from_ratio(trend_ratio)} from the first to the last period."
+
+        # Volatility / flags
+        flagged_n = 0
+        if "flag_pop_20" in g.columns:
+            flagged_n = int(g["flag_pop_20"].fillna(False).sum())
+
+        # Largest PoP increase/decrease using pop_delta_pct
+        inc_txt = "Largest increase: not available."
+        dec_txt = "Largest decrease: not available."
+        if "pop_delta_pct" in g.columns:
+            pop = pd.to_numeric(g["pop_delta_pct"], errors="coerce")
+
+            # Ignore inf when selecting max/min if you prefer; but keep for display if it wins.
+            idx_max = pop.idxmax(skipna=True) if pop.notna().any() else None
+            idx_min = pop.idxmin(skipna=True) if pop.notna().any() else None
+
+            if idx_max is not None and pd.notna(idx_max):
+                r = pop.loc[idx_max]
+                p = g.loc[idx_max, "period_label"]
+                y = g.loc[idx_max, "lbs"]
+                inc_txt = f"Largest increase: {p} ({_fmt_int(y)} lbs, {_fmt_pct_from_ratio(r)} vs prior period)."
+
+            if idx_min is not None and pd.notna(idx_min):
+                r = pop.loc[idx_min]
+                p = g.loc[idx_min, "period_label"]
+                y = g.loc[idx_min, "lbs"]
+                dec_txt = f"Largest decrease: {p} ({_fmt_int(y)} lbs, {_fmt_pct_from_ratio(r)} vs prior period)."
+
+        # Most recent period
+        recent_period = g["period_label"].iloc[-1]
+        recent_lbs = g["lbs"].iloc[-1]
+
+        # Optional prior FY quick context (kept minimal)
+        prior_txt = ""
+        if include_prior and "lbs_prior" in g.columns:
+            lbs_prior = pd.to_numeric(g["lbs_prior"], errors="coerce")
+            prior_total = lbs_prior.sum(skipna=True)
+            prior_txt = f" Prior FY total (aligned): {_fmt_int(prior_total)} lbs."
+
+        # Compose a compact executive summary
+        lines.append(f"{entity_id}")
+        lines.append(f"- Total distributed (selected range): {_fmt_int(total_lbs)} lbs; average per period: {_fmt_int(avg_lbs)} lbs.{prior_txt}")
+        lines.append(f"- {trend_phrase}")
+        lines.append(f"- {inc_txt}")
+        lines.append(f"- {dec_txt}")
+        lines.append(f"- High-volatility periods (>|20|% vs prior period): {flagged_n}.")
+        lines.append(f"- Most recent period ({recent_period}): {_fmt_int(recent_lbs)} lbs.")
+        lines.append("")  # spacer between entities
+
+    return "\n".join(lines).strip()
 
 st.subheader("Y4. Downloadable HTML Report")
 inputs_summary = {
