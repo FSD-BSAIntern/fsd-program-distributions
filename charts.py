@@ -44,6 +44,8 @@ def make_entity_chart(df_entity: pd.DataFrame, granularity: str, include_prior: 
                 x=x,
                 y=df_entity["lbs_prior"],
                 mode="lines+markers",
+                line=dict(color="orange", dash="dash"),
+                marker=dict(color="orange", symbol="circle"),
                 name="Prior FY (same dates)",
                 hovertemplate="%{x}<br>%{y:,.0f} Lbs (Prior FY)<extra></extra>",
             )

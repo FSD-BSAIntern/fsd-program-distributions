@@ -335,7 +335,7 @@ if include_prior:
 y1_disp = y1_disp.rename(columns=rename_map)
 
 # --- Outputs ---
-st.subheader("Y1. Summary Table")
+st.subheader("1. Summary Table")
 st.caption("Alert (****) triggers only on a ±20% change vs. the immediate Previous Period (Current FY).")
 
 bucket_cols = [
@@ -361,7 +361,7 @@ styled_y1 = y1_disp.style.applymap(
 
 st.dataframe(styled_y1, use_container_width=True, hide_index=True)
 
-st.subheader("Y2. Trend Figures by Agency/Region")
+st.subheader("2. Trend Figures by Agency/Region")
 chart_mode = st.radio("Show charts for", options=["All selected entities", "Choose one"], horizontal=True)
 chosen = None
 if chart_mode == "Choose one":
@@ -376,29 +376,25 @@ for entity_id, g in epd.groupby("entity_id"):
     st.plotly_chart(fig, use_container_width=True)
     chart_html_frags.append(fig.to_html(full_html=False, include_plotlyjs="cdn"))
 
-st.subheader("Y3. Executive Summary")
+st.subheader("3. Executive Summary")
 if len(epd):
     narrative = build_narrative(epd, granularity=granularity, include_prior=include_prior)
     st.text(narrative)
 else:
     st.text("No data available for the selected filters.")
 
-st.subheader("Y4. Downloadable HTML Report")
+st.subheader("4. Downloadable HTML Report")
 inputs_summary = {
-    "Report level": mode,
-    "Selected entities": ", ".join(selected_entities),
+    "Report Level": mode,
+    "Selected {mode}(s)": ", ".join(selected_entities),
     "Granularity": granularity,
-    "Window start": str(window.start_date.date()),
-    "Window end": str(window.end_date.date()),
-    "YoY same-dates comparison": "On" if include_prior else "Off",
+    "Window Start": str(window.start_date.date()),
+    "Window End": str(window.end_date.date()),
+    "YoY same-dates Comparison": "Included" if include_prior else "Not Included",
 }
 
 # Use unformatted y1 in report (keeps numeric columns usable if needed)
-y1_report = y1.copy()
-# Convert pct columns to readable strings
-for c in ["pop_delta_pct", "rng_delta_pct", "pop_delta_pct_prior", "rng_delta_pct_prior", "did_pop_pct", "did_rng_pct"]:
-    if c in y1_report.columns:
-        y1_report[c] = y1_report[c].apply(_format_pct)
+y1_report = y1_disp.copy()
 
 html = build_report_html(
     inputs_summary=inputs_summary,
