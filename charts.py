@@ -67,7 +67,7 @@ def make_entity_chart(df_entity: pd.DataFrame, granularity: str, include_prior: 
                     name="Flag (±20% vs Prior Period)",
                     marker=dict(size=10, color="red", symbol="circle"),
                     customdata=flagged_pct,
-                    hovertemplate="This is %{customdata:.1f}% change vs Prior Period<br>(>|20|%)<extra></extra>",
+                    hovertemplate="This is %{customdata:.1f}% change vs Prior Period<extra></extra>",
                 )
             )
 

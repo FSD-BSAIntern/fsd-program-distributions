@@ -349,7 +349,17 @@ bucket_cols = [
 
 y1_disp = y1_disp.drop(columns=[c for c in bucket_cols if c in y1_disp.columns])
 
-st.dataframe(y1_disp, use_container_width=True, hide_index=True)
+def highlight_alert_cell(val):
+    if val == "****":
+        return "background-color: #ffe6e6; color: red; font-weight: bold;"
+    return ""
+
+styled_y1 = y1_disp.style.applymap(
+    highlight_alert_cell,
+    subset=["Alert"]
+)
+
+st.dataframe(styled_y1, use_container_width=True, hide_index=True)
 
 st.subheader("Y2. Charts")
 chart_mode = st.radio("Show charts for", options=["All selected entities", "Choose one"], horizontal=True)
