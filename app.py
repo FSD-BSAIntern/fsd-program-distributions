@@ -205,7 +205,7 @@ else:
     end_d = None
 
 with wcol3:
-    yoy_toggle = st.checkbox("Include prior fiscal year same-dates? (Does not work when already comparing years)", value=False, disabled=(granularity == "Yearly"))
+    yoy_toggle = st.checkbox("Include prior fiscal year same-dates? (Does not work when already comparing years).", value=False, disabled=(granularity == "Yearly"))
 
 # Resolve window
 try:
@@ -290,8 +290,9 @@ if include_prior:
 
 y1 = epd[y1_cols].copy()
 
-# User-facing formatting
+# User-facing formatting (apply to original column names)
 y1_disp = y1.copy()
+
 for c in ["lbs", "pop_delta_lbs", "rng_delta_lbs", "lbs_prior"]:
     if c in y1_disp.columns:
         y1_disp[c] = y1_disp[c].apply(lambda x: "" if pd.isna(x) else f"{float(x):,.0f}")
@@ -303,6 +304,35 @@ for c in ["hh_median", "hh_max", "hh_median_range", "hh_max_range"]:
 for c in ["pop_delta_pct", "rng_delta_pct", "pop_delta_pct_prior", "rng_delta_pct_prior", "did_pop_pct", "did_rng_pct"]:
     if c in y1_disp.columns:
         y1_disp[c] = y1_disp[c].apply(_format_pct)
+
+# Now rename for display
+rename_map = {
+    "entity_id": "Entity",
+    "period_label": "Period",
+    "lbs": "Total Pounds",
+
+    "hh_median": "Median Households",
+    "hh_max": "Max Households",
+    "hh_median_range": "Median Households (Range)",
+    "hh_max_range": "Max Households (Range)",
+
+    "pop_delta_lbs": "Δ Pounds vs Prior Period",
+    "pop_delta_pct": "% Change vs Prior Period",
+    "rng_delta_lbs": "Δ Pounds vs Range Average",
+    "rng_delta_pct": "% Change vs Range Average",
+
+    "Flag": "Alert",
+}
+if include_prior:
+    rename_map |= {
+        "lbs_prior": "Total Pounds (Prior FY)",
+        "pop_delta_pct_prior": "% Change vs Prior Period (Prior FY)",
+        "rng_delta_pct_prior": "% Change vs Range Avg (Prior FY)",
+        "did_pop_pct": "DiD % vs Prior FY (Prior Period)",
+        "did_rng_pct": "DiD % vs Prior FY (Range Avg)",
+    }
+
+y1_disp = y1_disp.rename(columns=rename_map)
 
 # --- Outputs ---
 st.subheader("Y1. Summary Table")
