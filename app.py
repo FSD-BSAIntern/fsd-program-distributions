@@ -6,6 +6,7 @@ from datetime import date
 from typing import List
 
 import pandas as pd
+import numpy as np
 import streamlit as st
 
 import config
@@ -75,11 +76,20 @@ try:
     pt_num = pd.to_numeric(df[PT_COL], errors="coerce")
 
     NONFOOD_CODES = {1, 2, 12, 13, 19, 20, 22}
-    PRODUCE_CODES = {28}  # expand this after validation
+    PRODUCE_CODES = {28}
 
-    df["_product_type_bucket"] = "Non-Produce"
-    df.loc[pt_num.isin(NONFOOD_CODES), "_product_type_bucket"] = "Non-Food"
-    df.loc[pt_num.isin(PRODUCE_CODES), "_product_type_bucket"] = "Produce"
+    conditions = [
+        pt_num.isin(PRODUCE_CODES),
+        pt_num.isin(NONFOOD_CODES),
+        ]
+    
+    choices = ["Produce", "Non-Food"]
+    
+    df["_product_type_bucket"] = np.select(
+        conditions,
+        choices,
+        default="Non-Produce"
+        )
     
     with st.expander("DEBUG: Product Type totals", expanded=True):
         st.write("Total gross_weight (no filters):", float(df["gross_weight"].sum()))
@@ -109,16 +119,16 @@ st.subheader("Report Controls")
 col1, col2, col3 = st.columns([1.2, 1.2, 1.6])
 
 with col1:
-    mode = st.radio("Report Level (X0)", options=["Agency", "Region"], horizontal=True)
+    mode = st.radio("Selected Report Level:", options=["Agency", "Region"], horizontal=True)
 
 entity_col = "entity_agency" if mode == "Agency" else "entity_region"
 entity_values = sorted(df[entity_col].dropna().astype(str).unique().tolist())
 
 with col2:
-    selected_entities = st.multiselect("Select entities (X1)", options=entity_values, default=entity_values[:1])
+    selected_entities = st.multiselect("Selected Agency/Region(s):", options=entity_values, default=entity_values[:1])
 
 with col3:
-    granularity = st.selectbox("Time aggregation (X2)", options=["Weekly", "Monthly", "Yearly"], index=0)
+    granularity = st.selectbox("Choose a Time Period to Report:", options=["Weekly", "Monthly", "Yearly"], index=0)
 
 # --- Additional filters (Inventory Posting Group, Document Type) ---
 INV_COL = "Inventory Posting Group"
@@ -128,7 +138,7 @@ DOC_COL = "Document Type"
 inv_canonical = ["Donated", "Purchased", "USDA/Government"]
 inv_present = [x for x in inv_canonical if x in df[INV_COL].dropna().astype(str).unique()]
 selected_inv = st.multiselect(
-    "Inventory Posting Group",
+    "Select Inventory Posting Group(s)",
     options=inv_present,
     default=inv_present,  # default = include all present
 )
@@ -148,7 +158,7 @@ df.loc[df[DOC_COL].isna(), "_doc_bucket"] = None
 
 doc_present = [x for x in doc_canonical if x in df["_doc_bucket"].dropna().unique()]
 selected_docs = st.multiselect(
-    "Document Type",
+    "Select Document Type(s)",
     options=doc_present,
     default=doc_present,  # default = include all present
 )
@@ -158,21 +168,23 @@ product_type_options = ["Produce", "Non-Produce", "Non-Food"]
 product_types_present = product_type_options
 
 selected_product_types = st.multiselect(
-    "Product Type",
+    "Select Product Type(s)",
     options=product_types_present,
     default=product_types_present,
 )
 
 if not selected_entities:
-    st.error("Select at least one entity.")
+    st.error("Select at least one Agency/Region.")
     st.stop()
 
 # Time window controls
 st.subheader("Time Window")
+st.caption("Select a Start and End Date for the Report. You can select a date range or \
+    choose an anchor date and a number of previous (selected) periods to include.")
 
 wcol1, wcol2, wcol3, wcol4 = st.columns([1.1, 1.1, 1.1, 1.1])
 
-window_mode = st.radio("X3 mode", options=["Date range", "Anchor + lookback"], horizontal=True)
+window_mode = st.radio("Time Window Type", options=["Date Range", "Anchor + Period Lookback"], horizontal=True)
 
 min_date = pd.to_datetime(df["date"].min()).date()
 max_date = pd.to_datetime(df["date"].max()).date()
@@ -193,7 +205,7 @@ else:
     end_d = None
 
 with wcol3:
-    yoy_toggle = st.checkbox("Include prior fiscal year same-dates (X3.5)", value=False, disabled=(granularity == "Yearly"))
+    yoy_toggle = st.checkbox("Include prior fiscal year same-dates? (Does not work when already comparing years)", value=False, disabled=(granularity == "Yearly"))
 
 # Resolve window
 try:
