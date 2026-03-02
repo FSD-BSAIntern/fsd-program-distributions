@@ -361,7 +361,7 @@ styled_y1 = y1_disp.style.applymap(
 
 st.dataframe(styled_y1, use_container_width=True, hide_index=True)
 
-st.subheader("Y2. Trend Figures by Entity")
+st.subheader("Y2. Trend Figures by Agency/Region")
 chart_mode = st.radio("Show charts for", options=["All selected entities", "Choose one"], horizontal=True)
 chosen = None
 if chart_mode == "Choose one":
@@ -376,10 +376,7 @@ for entity_id, g in epd.groupby("entity_id"):
     st.plotly_chart(fig, use_container_width=True)
     chart_html_frags.append(fig.to_html(full_html=False, include_plotlyjs="cdn"))
 
-st.subheader("Y3. Overall Summary")
-narrative = ""  # default for report
-
-st.subheader("Y3. Verbal Summary")
+st.subheader("Y3. Executive Summary")
 if len(epd):
     narrative = build_narrative(epd, granularity=granularity, include_prior=include_prior)
     st.text(narrative)

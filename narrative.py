@@ -8,6 +8,16 @@ import pandas as pd
 
 from charts import period_label
 
+def _per_period_word(granularity: str) -> str:
+    g = (granularity or "").strip().lower()
+    if g == "weekly":
+        return "per week"
+    if g == "monthly":
+        return "per month"
+    if g == "yearly":
+        return "per year"
+    return "per period"
+
 def _fmt_int(x):
     return "" if pd.isna(x) else f"{float(x):,.0f}"
 
@@ -50,14 +60,33 @@ def build_narrative(epd: pd.DataFrame, granularity: str, include_prior: bool) ->
         # Trend: compare first non-null vs last non-null (interpretable)
         nonnull = g.loc[lbs.notna()]
         first_val = nonnull["lbs"].iloc[0] if len(nonnull) else np.nan
-        last_val = nonnull["lbs"].iloc[-1] if len(nonnull) else np.nan
-        trend_ratio = _safe_ratio_trend(first_val, last_val)
+        last_val  = nonnull["lbs"].iloc[-1] if len(nonnull) else np.nan
 
-        if pd.isna(trend_ratio):
-            trend_phrase = "Overall trend is not directly comparable (starts at 0 or missing early periods)."
+        n_steps = max(len(nonnull) - 1, 0)
+        total_ratio = _safe_ratio_trend(first_val, last_val)
+
+        per_word = _per_period_word(granularity)
+
+        if pd.isna(total_ratio) or n_steps == 0:
+            trend_phrase = "Overall trend is not directly comparable (insufficient periods or starts at 0)."
         else:
-            direction = "increased" if trend_ratio > 0 else "decreased" if trend_ratio < 0 else "remained roughly flat"
-            trend_phrase = f"Over time, distribution generally {direction} by {_fmt_pct_from_ratio(trend_ratio)} from the first to the last period."
+            # geometric average change per step (compounded)
+            if first_val <= 0 or last_val < 0:
+                trend_phrase = "Overall trend is not directly comparable (non-positive values in trend calculation)."
+            else:
+                per_period_ratio = (last_val / first_val) ** (1 / n_steps) - 1
+
+                direction = (
+                    "increased" if total_ratio > 0
+                    else "decreased" if total_ratio < 0
+                    else "remained roughly stable"
+                )
+
+                trend_phrase = (
+                    f"Over time, distribution generally {direction} by "
+                    f"{_fmt_pct_from_ratio(abs(per_period_ratio))} {per_word}, "
+                    f"totaling {_fmt_pct_from_ratio(abs(total_ratio))} from the first to the last period."
+                )
 
         # Volatility / flags
         flagged_n = 0
@@ -86,6 +115,10 @@ def build_narrative(epd: pd.DataFrame, granularity: str, include_prior: bool) ->
                 y = g.loc[idx_min, "lbs"]
                 dec_txt = f"Largest decrease: {p} ({_fmt_int(y)} lbs, {_fmt_pct_from_ratio(r)} vs prior period)."
 
+        # Earliest period
+        earliest_period = g["period_label"].iloc[0]
+        earliest_lbs = g["lbs"].iloc[0]
+        
         # Most recent period
         recent_period = g["period_label"].iloc[-1]
         recent_lbs = g["lbs"].iloc[-1]
@@ -98,13 +131,13 @@ def build_narrative(epd: pd.DataFrame, granularity: str, include_prior: bool) ->
             prior_txt = f" Prior FY total (aligned): {_fmt_int(prior_total)} lbs."
 
         # Compose a compact executive summary
-        lines.append(f"{entity_id}")
-        lines.append(f"- Total distributed (selected range): {_fmt_int(total_lbs)} lbs; average per period: {_fmt_int(avg_lbs)} lbs.{prior_txt}")
+        lines.append(f"{entity_id} for the period {earliest_period} to {recent_period}:")
+        lines.append(f"- Total pounds distributed: {_fmt_int(total_lbs)} lbs. The average per period was {_fmt_int(avg_lbs)} lbs.{prior_txt}")
         lines.append(f"- {trend_phrase}")
         lines.append(f"- {inc_txt}")
         lines.append(f"- {dec_txt}")
-        lines.append(f"- High-volatility periods (>|20|% vs prior period): {flagged_n}.")
-        lines.append(f"- Most recent period ({recent_period}): {_fmt_int(recent_lbs)} lbs.")
+        lines.append(f"- Number of periods with >20% increase/decrease vs prior period: {flagged_n}.")
+        lines.append(f"- Most recent period ({recent_period}) pounds distributed: {_fmt_int(recent_lbs)} lbs.")
         lines.append("")  # spacer between entities
 
     return "\n".join(lines).strip()
