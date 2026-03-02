@@ -86,7 +86,7 @@ def build_narrative(epd: pd.DataFrame, granularity: str, include_prior: bool) ->
                 trend_phrase = (
                     f"Over time, distribution generally {direction} by "
                     f"{_fmt_pct_from_ratio(abs(per_period_ratio))} {per_word}, "
-                    f"totaling {_fmt_pct_from_ratio(abs(total_ratio))} from the first to the last period."
+                    f"totaling {_fmt_pct_from_ratio(abs(total_ratio))} from the first to the last {period}."
                 )
 
         # Volatility / flags
@@ -108,13 +108,13 @@ def build_narrative(epd: pd.DataFrame, granularity: str, include_prior: bool) ->
                 r = pop.loc[idx_max]
                 p = g.loc[idx_max, "period_label"]
                 y = g.loc[idx_max, "lbs"]
-                inc_txt = f"Largest increase: {p} ({_fmt_int(y)} lbs, {_fmt_pct_from_ratio(r)} vs prior period)."
+                inc_txt = f"Largest increase: {p} ({_fmt_int(y)} lbs, {_fmt_pct_from_ratio(r)} vs previous {period})."
 
             if idx_min is not None and pd.notna(idx_min):
                 r = pop.loc[idx_min]
                 p = g.loc[idx_min, "period_label"]
                 y = g.loc[idx_min, "lbs"]
-                dec_txt = f"Largest decrease: {p} ({_fmt_int(y)} lbs, {_fmt_pct_from_ratio(r)} vs prior period)."
+                dec_txt = f"Largest decrease: {p} ({_fmt_int(y)} lbs, {_fmt_pct_from_ratio(r)} vs previous {period})."
 
         # Earliest period
         earliest_period = g["period_label"].iloc[0]
@@ -139,7 +139,7 @@ def build_narrative(epd: pd.DataFrame, granularity: str, include_prior: bool) ->
         lines.append(f"- {trend_phrase}")
         lines.append(f"- {inc_txt}")
         lines.append(f"- {dec_txt}")
-        lines.append(f"- Number of {period}(s) with >20% increase/decrease vs prior {period}: {flagged_n}.")
+        lines.append(f"- Number of {period}(s) with >20% increase/decrease vs previous {period}: {flagged_n}.")
         lines.append(f"- Most recent {period} ({recent_period}) pounds distributed: {_fmt_int(recent_lbs)} lbs.")
         lines.append("")  # spacer between entities
 
