@@ -337,6 +337,16 @@ y1_disp = y1_disp.rename(columns=rename_map)
 # --- Outputs ---
 st.subheader("Y1. Summary Table")
 st.caption("Flag (****) triggers only on ±20% period-over-period % change (current FY).")
+
+bucket_cols = [
+    "hh_median_bucket",
+    "hh_max_bucket",
+    "hh_median_range_bucket",
+    "hh_max_range_bucket",
+]
+
+y1_disp = y1_disp.drop(columns=[c for c in bucket_cols if c in y1_disp.columns])
+
 st.dataframe(y1_disp, use_container_width=True, hide_index=True)
 
 st.subheader("Y2. Charts")
