@@ -386,7 +386,7 @@ else:
 st.subheader("4. Downloadable HTML Report")
 inputs_summary = {
     "Report Level": mode,
-    "Selected {mode}(s)": ", ".join(selected_entities),
+    "Selected Entities": ", ".join(selected_entities),
     "Granularity": granularity,
     "Window Start": str(window.start_date.date()),
     "Window End": str(window.end_date.date()),
