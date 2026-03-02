@@ -189,7 +189,7 @@ window_mode = st.radio("Time Window Type", options=["Date Range", "Anchor + Peri
 min_date = pd.to_datetime(df["date"].min()).date()
 max_date = pd.to_datetime(df["date"].max()).date()
 
-if window_mode == "Date range":
+if window_mode == "Date Range":
     with wcol1:
         start_d = st.date_input("Start date", value=min_date, min_value=min_date, max_value=max_date)
     with wcol2:
@@ -198,9 +198,9 @@ if window_mode == "Date range":
     lookback = None
 else:
     with wcol1:
-        anchor_d = st.date_input("Anchor date", value=max_date, min_value=min_date, max_value=max_date)
+        anchor_d = st.date_input("Anchor Date", value=max_date, min_value=min_date, max_value=max_date)
     with wcol2:
-        lookback = st.number_input("Previous periods", min_value=0, max_value=260, value=3, step=1)
+        lookback = st.number_input("Previous Periods", min_value=0, max_value=260, value=3, step=1)
     start_d = None
     end_d = None
 
